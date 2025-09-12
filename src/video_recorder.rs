@@ -15,6 +15,12 @@ impl Frame {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CursorMode {
+    Hidden = 1,
+    Show = 2,
+}
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct RecorderWaker {

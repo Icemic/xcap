@@ -25,5 +25,4 @@ pub use error::{XCapError, XCapResult};
 pub use monitor::Monitor;
 pub use window::Window;
 
-pub use video_recorder::Frame;
-pub use video_recorder::VideoRecorder;
+pub use video_recorder::{CursorMode, Frame, VideoRecorder};

@@ -1,5 +1,6 @@
 use std::sync::mpsc::Receiver;
 
+use crate::video_recorder::CursorMode;
 use crate::{XCapResult, video_recorder::Frame};
 
 use super::{
@@ -14,9 +15,12 @@ pub enum ImplVideoRecorder {
 }
 
 impl ImplVideoRecorder {
-    pub fn new(monitor: ImplMonitor) -> XCapResult<(Self, Receiver<Frame>)> {
+    pub fn new(
+        monitor: ImplMonitor,
+        cursor_mode: CursorMode,
+    ) -> XCapResult<(Self, Receiver<Frame>)> {
         if wayland_detect() {
-            let (recorder, receiver) = WaylandVideoRecorder::new(monitor)?;
+            let (recorder, receiver) = WaylandVideoRecorder::new(monitor, cursor_mode)?;
             Ok((ImplVideoRecorder::Wayland(recorder), receiver))
         } else {
             let (recorder, receiver) = XorgVideoRecorder::new(monitor)?;

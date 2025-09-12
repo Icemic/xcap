@@ -12,7 +12,7 @@ use xcb::{
 
 use crate::{
     error::{XCapError, XCapResult},
-    video_recorder::Frame,
+    video_recorder::{CursorMode, Frame},
 };
 
 use super::{
@@ -365,7 +365,10 @@ impl ImplMonitor {
         capture_region(self, x, y, width, height)
     }
 
-    pub fn video_recorder(&self) -> XCapResult<(ImplVideoRecorder, Receiver<Frame>)> {
-        ImplVideoRecorder::new(self.clone())
+    pub fn video_recorder(
+        &self,
+        cursor_mode: CursorMode,
+    ) -> XCapResult<(ImplVideoRecorder, Receiver<Frame>)> {
+        ImplVideoRecorder::new(self.clone(), cursor_mode)
     }
 }

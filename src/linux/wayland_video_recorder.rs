@@ -33,7 +33,10 @@ use zbus::{
     zvariant::{DeserializeDict, OwnedFd, OwnedObjectPath, Type, Value},
 };
 
-use crate::{XCapError, XCapResult, video_recorder::Frame};
+use crate::{
+    XCapError, XCapResult,
+    video_recorder::{CursorMode, Frame},
+};
 
 use super::{
     impl_monitor::ImplMonitor,
@@ -69,10 +72,11 @@ pub struct ScreenCastStartResponse {
 /// https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.ScreenCast.html
 pub struct ScreenCast<'a> {
     proxy: Proxy<'a>,
+    cursor_mode: CursorMode,
 }
 
 impl ScreenCast<'_> {
-    pub fn new() -> XCapResult<Self> {
+    pub fn new(cursor_mode: CursorMode) -> XCapResult<Self> {
         let conn = get_zbus_connection()?;
         let proxy = Proxy::new(
             conn,
@@ -81,7 +85,7 @@ impl ScreenCast<'_> {
             "org.freedesktop.portal.ScreenCast",
         )?;
 
-        Ok(ScreenCast { proxy })
+        Ok(ScreenCast { proxy, cursor_mode })
     }
 
     pub fn create_session(&self) -> XCapResult<OwnedObjectPath> {
@@ -128,6 +132,7 @@ impl ScreenCast<'_> {
         options.insert("handle_token", Value::from(handle_token));
         options.insert("types", Value::from(1_u32));
         options.insert("multiple", Value::from(false));
+        options.insert("cursor_mode", Value::from(self.cursor_mode as u32));
 
         self.proxy
             .call_method("SelectSources", &(session, options))?;
@@ -188,11 +193,14 @@ struct ListenerUserData {
 }
 
 impl WaylandVideoRecorder {
-    pub fn new(monitor: ImplMonitor) -> XCapResult<(Self, Receiver<Frame>)> {
+    pub fn new(
+        monitor: ImplMonitor,
+        cursor_mode: CursorMode,
+    ) -> XCapResult<(Self, Receiver<Frame>)> {
         let (sender, receiver) = mpsc::channel();
         let (active_sender, active_receiver) = channel::channel();
 
-        let screen_cast = ScreenCast::new()?;
+        let screen_cast = ScreenCast::new(cursor_mode)?;
         let session = screen_cast.create_session()?;
         screen_cast.select_sources(&session)?;
         let response = screen_cast.start(&session)?;

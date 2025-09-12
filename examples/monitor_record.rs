@@ -1,10 +1,10 @@
 use std::{thread, time::Duration};
-use xcap::Monitor;
+use xcap::{CursorMode, Monitor};
 
 fn main() {
     let monitor = Monitor::from_point(100, 100).unwrap();
 
-    let (video_recorder, sx) = monitor.video_recorder().unwrap();
+    let (video_recorder, sx) = monitor.video_recorder(CursorMode::Hidden).unwrap();
 
     thread::spawn(move || {
         loop {

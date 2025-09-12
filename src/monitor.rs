@@ -2,6 +2,7 @@ use std::sync::mpsc::Receiver;
 
 use image::RgbaImage;
 
+use crate::video_recorder::CursorMode;
 use crate::{
     VideoRecorder, error::XCapResult, platform::impl_monitor::ImplMonitor, video_recorder::Frame,
 };
@@ -92,8 +93,11 @@ impl Monitor {
         self.impl_monitor.capture_region(x, y, width, height)
     }
 
-    pub fn video_recorder(&self) -> XCapResult<(VideoRecorder, Receiver<Frame>)> {
-        let (impl_video_recorder, sx) = self.impl_monitor.video_recorder()?;
+    pub fn video_recorder(
+        &self,
+        cursor_mode: CursorMode,
+    ) -> XCapResult<(VideoRecorder, Receiver<Frame>)> {
+        let (impl_video_recorder, sx) = self.impl_monitor.video_recorder(cursor_mode)?;
 
         Ok((VideoRecorder::new(impl_video_recorder), sx))
     }
