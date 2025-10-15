@@ -35,7 +35,7 @@ use zbus::{
 
 use crate::{
     XCapError, XCapResult,
-    video_recorder::{CursorMode, Frame},
+    video_recorder::{CursorMode, Frame, FrameFormat},
 };
 
 use super::{
@@ -305,31 +305,14 @@ impl WaylandVideoRecorder {
                             }
                             let size = user_data.format.size();
                             if let Some(frame_data) = datas[0].data() {
-                                let buffer = match user_data.format.format() {
-                                    VideoFormat::RGB => {
-                                        let mut buf =
-                                            vec![0; (size.width * size.height * 4) as usize];
-                                        for (src, dst) in
-                                            frame_data.chunks_exact(3).zip(buf.chunks_exact_mut(4))
-                                        {
-                                            dst[0] = src[0];
-                                            dst[1] = src[1];
-                                            dst[2] = src[2];
-                                            dst[3] = 255;
-                                        }
-
-                                        buf
-                                    }
-                                    VideoFormat::RGBA => frame_data.to_vec(),
-                                    VideoFormat::RGBx => frame_data.to_vec(),
-                                    VideoFormat::BGRx => {
-                                        let mut buf = frame_data.to_vec();
-                                        for src in buf.chunks_exact_mut(4) {
-                                            src.swap(0, 2);
-                                        }
-
-                                        buf
-                                    }
+                                let format = match user_data.format.format() {
+                                    VideoFormat::RGB => FrameFormat::RGB,
+                                    VideoFormat::BGR => FrameFormat::BGR,
+                                    VideoFormat::ARGB => FrameFormat::ARGB,
+                                    VideoFormat::BGRA => FrameFormat::BGRA,
+                                    VideoFormat::RGBA => FrameFormat::BGRA,
+                                    VideoFormat::RGBx => FrameFormat::RGB,
+                                    VideoFormat::BGRx => FrameFormat::BGR,
                                     _ => {
                                         log::error!(
                                             "Unsupported format: {:?}",
@@ -340,8 +323,12 @@ impl WaylandVideoRecorder {
                                 };
 
                                 if state {
-                                    let _ =
-                                        sender.send(Frame::new(size.width, size.height, buffer));
+                                    let _ = sender.send(Frame::new(
+                                        size.width,
+                                        size.height,
+                                        frame_data.to_vec(),
+                                        format,
+                                    ));
                                 }
                             }
                         }
@@ -360,11 +347,11 @@ impl WaylandVideoRecorder {
                     Enum,
                     Id,
                     VideoFormat::RGB,
-                    VideoFormat::RGBA,
+                    VideoFormat::BGR,
+                    VideoFormat::ARGB,
+                    VideoFormat::BGRA,
                     VideoFormat::RGBx,
                     VideoFormat::BGRx,
-                    // VideoFormat::YUY2,
-                    // VideoFormat::I420,
                 ),
                 pod::property!(
                     FormatProperties::VideoSize,

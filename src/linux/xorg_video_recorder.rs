@@ -1,6 +1,6 @@
 use super::impl_monitor::ImplMonitor;
 use crate::error::{XCapError, XCapResult};
-use crate::video_recorder::{Frame, RecorderWaker};
+use crate::video_recorder::{Frame, FrameFormat, RecorderWaker};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -60,7 +60,7 @@ impl XorgVideoRecorder {
                         let height = image.height();
                         let raw = image.into_raw();
 
-                        let frame = Frame::new(width, height, raw);
+                        let frame = Frame::new(width, height, raw, FrameFormat::RGBA);
                         if let Err(e) = sender.send(frame) {
                             log::error!("Failed to send frame: {e:?}");
                             break Err(XCapError::new(format!("Failed to send frame: {e}")));

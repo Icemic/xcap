@@ -78,6 +78,7 @@ pub fn texture_to_frame(
             source_desc.Width,
             source_desc.Height,
             bgra_to_rgba(bgra.to_owned()),
+            crate::video_recorder::FrameFormat::RGBA,
         ))
     }
 }

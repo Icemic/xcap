@@ -74,6 +74,7 @@ impl DataOutputSampleBufferDelegateVars {
                 width: width as u32,
                 height: height as u32,
                 raw: buffer,
+                format: crate::video_recorder::FrameFormat::RGBA,
             });
         }
     }
