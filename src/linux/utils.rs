@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     env::{self, var_os},
     path::{Path, PathBuf},
     sync::mpsc::Receiver,
@@ -17,7 +18,7 @@ use xcb::{
 use zbus::{
     Result as ZBusResult,
     blocking::{Connection as ZBusConnection, Proxy},
-    zvariant::Type,
+    zvariant::{Type, Value},
 };
 
 use crate::{XCapError, error::XCapResult};
@@ -191,14 +192,24 @@ where
         .ok_or(XCapError::new("Failed get response"))?;
 
     let body = message.body();
-    let (code, body): (u32, T) = body.deserialize()?;
+    let (code, _): (u32, HashMap<String, Value>) = body.deserialize()?;
+
+    // close the request anyway
+    let _ = request.call_method("Close", &());
 
     if code == 0 {
+        let (_, body): (u32, T) = body.deserialize()?;
         return Ok(body);
     }
 
     if code == 1 {
-        return Err(XCapError::new("Z-Bus canceled"));
+        return Err(XCapError::new("User cancelled the interaction"));
+    }
+
+    if code == 2 {
+        return Err(XCapError::new(
+            "User interaction was ended in some other way",
+        ));
     }
 
     Err(XCapError::new(format!("Response code is {code}")))
