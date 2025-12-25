@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     env::{self, var_os},
     path::{Path, PathBuf},
-    sync::mpsc::Receiver,
+    sync::{Mutex, mpsc::Receiver},
 };
 
 use image::{RgbaImage, open};
@@ -16,7 +16,6 @@ use xcb::{
     x::{Atom, InternAtom, ScreenBuf},
 };
 use zbus::{
-    Result as ZBusResult,
     blocking::{Connection as ZBusConnection, Proxy},
     zvariant::{Type, Value},
 };
@@ -28,17 +27,33 @@ lazy_static! {
         let display_name = env::var("DISPLAY").unwrap_or("DISPLAY:1".to_string());
         XcbConnection::connect(Some(display_name.as_str()))
     };
-    static ref ZBUS_CONNECTION: ZBusResult<ZBusConnection> = ZBusConnection::session();
+    static ref ZBUS_CONNECTION: Mutex<Option<ZBusConnection>> = Mutex::new(None);
 }
 
 pub fn get_xcb_connection_and_index() -> XCapResult<&'static (XcbConnection, i32)> {
     XCB_CONNECTION_AND_INDEX.as_ref().map_err(XCapError::new)
 }
 
-pub fn get_zbus_connection() -> XCapResult<&'static ZBusConnection> {
-    ZBUS_CONNECTION
-        .as_ref()
-        .map_err(|err| XCapError::ZbusError(err.clone()))
+pub fn get_zbus_connection() -> XCapResult<ZBusConnection> {
+    let mut conn_guard = ZBUS_CONNECTION
+        .lock()
+        .map_err(|err| XCapError::new(&err.to_string()))?;
+
+    if let Some(conn) = &*conn_guard {
+        return Ok(conn.clone());
+    }
+
+    let conn = ZBusConnection::session().map_err(|err| XCapError::ZbusError(err))?;
+
+    *conn_guard = Some(conn.clone());
+
+    Ok(conn)
+}
+
+pub fn clear_zbus_connection() {
+    if let Ok(mut conn_guard) = ZBUS_CONNECTION.lock() {
+        *conn_guard = None;
+    }
 }
 
 pub fn wayland_detect() -> bool {
@@ -207,6 +222,10 @@ where
     }
 
     if code == 2 {
+        log::warn!(
+            "User interaction was ended in some other way, try resetting the zbus connection"
+        );
+        clear_zbus_connection();
         return Err(XCapError::new(
             "User interaction was ended in some other way",
         ));

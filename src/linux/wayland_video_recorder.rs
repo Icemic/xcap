@@ -79,7 +79,7 @@ impl ScreenCast<'_> {
     pub fn new(cursor_mode: CursorMode) -> XCapResult<Self> {
         let conn = get_zbus_connection()?;
         let proxy = Proxy::new(
-            conn,
+            &conn,
             "org.freedesktop.portal.Desktop",
             "/org/freedesktop/portal/desktop",
             "org.freedesktop.portal.ScreenCast",
@@ -94,7 +94,7 @@ impl ScreenCast<'_> {
         let mut options = HashMap::new();
 
         let handle_token = rand::random::<u32>().to_string();
-        let portal_request = get_zbus_portal_request(conn, &handle_token)?;
+        let portal_request = get_zbus_portal_request(&conn, &handle_token)?;
 
         options.insert("handle_token", Value::from(&handle_token));
 
@@ -129,7 +129,7 @@ impl ScreenCast<'_> {
         let mut options = HashMap::new();
 
         let handle_token = rand::random::<u32>().to_string();
-        let portal_request = get_zbus_portal_request(conn, &handle_token)?;
+        let portal_request = get_zbus_portal_request(&conn, &handle_token)?;
 
         options.insert("handle_token", Value::from(handle_token));
         options.insert("types", Value::from(1_u32));
@@ -150,7 +150,7 @@ impl ScreenCast<'_> {
         let mut options = HashMap::new();
 
         let handle_token = rand::random::<u32>().to_string();
-        let portal_request = get_zbus_portal_request(conn, &handle_token)?;
+        let portal_request = get_zbus_portal_request(&conn, &handle_token)?;
 
         options.insert("handle_token", Value::from(&handle_token));
 
